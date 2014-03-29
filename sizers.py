@@ -94,6 +94,9 @@ class Sizer(Target):
         height = max(min_height, height)
         self.dimensions = (x, y, width, height)
         self.layout()
+    def fit(self):
+        width, height = self.get_min_size()
+        self.set_dimensions(0, 0, width, height)
     def get_min_size(self):
         raise NotImplementedError
     def layout(self):
@@ -236,7 +239,7 @@ def main():
     sizer.add(a)
     sizer.add(b)
     sizer.add(c)
-    sizer.set_dimensions(0, 0, 200, 200)
+    sizer.fit()
     print a.dimensions
     print b.dimensions
     print c.dimensions
