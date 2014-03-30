@@ -43,7 +43,7 @@ class Target(object):
     cy = property(lambda self: self.y + self.h / 2)
 
 class Box(Target):
-    def __init__(self, width, height):
+    def __init__(self, width=0, height=0):
         self.min_size = (width, height)
         self.dimensions = (0, 0, width, height)
     def get_min_size(self):
@@ -80,11 +80,11 @@ class Sizer(Target):
     def add(self, target, proportion=0, expand=False, border=0, align=NONE):
         item = SizerItem(target, proportion, expand, border, align)
         self.items.append(item)
-    def add_spacer(self, size):
+    def add_spacer(self, size=0):
         spacer = Box(size, size)
         self.add(spacer)
-    def add_stretch_spacer(self, proportion):
-        spacer = Box(0, 0)
+    def add_stretch_spacer(self, proportion=1):
+        spacer = Box()
         self.add(spacer, proportion)
     def get_dimensions(self):
         return self.dimensions
@@ -167,10 +167,12 @@ class VerticalSizer(BoxSizer):
         super(VerticalSizer, self).__init__(VERTICAL)
 
 class GridSizer(Sizer):
-    def __init__(self, rows, cols):
+    def __init__(self, rows, cols, row_spacing=0, col_spacing=0):
         super(GridSizer, self).__init__()
         self.rows = rows
         self.cols = cols
+        self.row_spacing = row_spacing
+        self.col_spacing = col_spacing
         self.row_proportions = {}
         self.col_proportions = {}
     def set_row_proportion(self, row, proportion):
@@ -197,15 +199,14 @@ class GridSizer(Sizer):
         return row_heights, col_widths
     def get_min_size(self):
         row_heights, col_widths = self.get_row_col_sizes()
-        width = sum(col_widths)
-        height = sum(row_heights)
+        width = sum(col_widths) + self.col_spacing * (len(col_widths) - 1)
+        height = sum(row_heights) + self.row_spacing * (len(row_heights) - 1)
         return (width, height)
     def layout(self):
-        x, y = self.x, self.y
-        width, height = self.width, self.height
+        row_spacing, col_spacing = self.row_spacing, self.col_spacing
         min_width, min_height = self.get_min_size()
-        extra_width = max(0, width - min_width)
-        extra_height = max(0, height - min_height)
+        extra_width = max(0, self.width - min_width)
+        extra_height = max(0, self.height - min_height)
         rows, cols = self.get_rows_cols()
         row_proportions = [
             self.row_proportions.get(row, 0) for row in range(rows)]
@@ -222,11 +223,11 @@ class GridSizer(Sizer):
             if proportion:
                 p = proportion / total_col_proportions
                 col_widths[col] += int(extra_width * p)
-        row_y = [sum(row_heights[:i]) for i in range(rows)]
-        col_x = [sum(col_widths[:i]) for i in range(cols)]
+        row_y = [sum(row_heights[:i]) + row_spacing * i for i in range(rows)]
+        col_x = [sum(col_widths[:i]) + col_spacing * i for i in range(cols)]
         positions = product(range(rows), range(cols))
         for item, (row, col) in zip(self.items, positions):
-            x, y = col_x[col], row_y[row]
+            x, y = self.x + col_x[col], self.y + row_y[row]
             w, h = col_widths[col], row_heights[row]
             item.set_dimensions(x, y, w, h)
 
